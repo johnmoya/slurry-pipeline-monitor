@@ -1,0 +1,3 @@
+id_alerta,inicio,fin,tipo,id_estacion,km,valor_pico,detalle,duracion_min
+EN-001,2026-10-05 09:05:00,2026-10-05 09:40:00,Velocidad cercana a deposición,,,1.39,Mín 1.39 m/s (alerta bajo 1.43 m/s),35.0
+EN-002,2026-10-09 16:13:00,2026-10-09 17:00:00,Presión sobre 90% MAOP,PT-01,0.0,157.91,Máx 157.9 bar (90.2% MAOP 175 bar),47.0

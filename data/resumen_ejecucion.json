@@ -1,0 +1,17 @@
+{
+  "fugas_simuladas": 4,
+  "fugas_detectadas": 4,
+  "falsas_alarmas_14_dias": 0,
+  "transitorios_operacionales_rechazados": 23,
+  "falsas_alarmas_sin_compensar": 42,
+  "mc_escenarios_con_fuga": 250,
+  "mc_dias_sin_fuga": 30.0,
+  "mc_falsas_alarmas_sin_fuga": 2,
+  "friccion_calibrada": 0.01498,
+  "umbrales_balance_pct": [
+    2.0,
+    0.6,
+    0.3
+  ],
+  "segundos": 36.4
+}

@@ -1,0 +1,31 @@
+escenario,horas,falsas_alarmas,detalle_falsas,eventos_operacionales_rechazados
+SF-00,24.0,0,,2
+SF-01,24.0,1,Onda de presión (No confirmada): Onda con origen interior sin desbalance posterior,3
+SF-02,24.0,0,,1
+SF-03,24.0,0,,2
+SF-04,24.0,0,,4
+SF-05,24.0,0,,1
+SF-06,24.0,0,,2
+SF-07,24.0,0,,2
+SF-08,24.0,0,,2
+SF-09,24.0,0,,4
+SF-10,24.0,0,,2
+SF-11,24.0,0,,1
+SF-12,24.0,0,,2
+SF-13,24.0,0,,3
+SF-14,24.0,0,,1
+SF-15,24.0,0,,1
+SF-16,24.0,0,,1
+SF-17,24.0,0,,3
+SF-18,24.0,0,,2
+SF-19,24.0,0,,3
+SF-20,24.0,0,,2
+SF-21,24.0,0,,3
+SF-22,24.0,0,,3
+SF-23,24.0,0,,1
+SF-24,24.0,0,,3
+SF-25,24.0,1,"Onda de presión (No confirmada): Onda con origen interior sin desbalance posterior; frente incompleto, origen entre km 12 y 25",2
+SF-26,24.0,0,,3
+SF-27,24.0,0,,2
+SF-28,24.0,0,,1
+SF-29,24.0,0,,1

@@ -1,0 +1,147 @@
+// =============================================================================
+// Medidas DAX — Monitoreo de ducto de concentrado
+// Crear una tabla vacía "_Medidas" (Ingresar datos → tabla sin filas) y pegar
+// cada medida allí, en las carpetas de visualización indicadas.
+// =============================================================================
+
+// ---------- Carpeta: Operación ----------------------------------------------
+
+Caudal Medio m3h =
+AVERAGE ( fact_operacion_min[caudal_entrada_m3h] )
+
+Volumen Bombeado m3 =
+SUM ( fact_operacion_min[caudal_entrada_m3h] ) / 60
+
+Sólidos Transportados t =
+SUM ( fact_operacion_min[solidos_t] )
+
+Velocidad Mínima m/s =
+MIN ( fact_operacion_min[velocidad_ms] )
+
+Minutos Bajo Velocidad de Alerta =
+COUNTROWS (
+    FILTER (
+        fact_operacion_min,
+        fact_operacion_min[velocidad_ms] < fact_operacion_min[velocidad_alerta_ms]
+    )
+)
+
+Presión Mínima en Línea bar =
+MIN ( fact_operacion_min[presion_min_linea_bar] )
+
+// Último valor del período filtrado (para tarjetas tipo "estado actual")
+Último Desbalance 60 min % =
+VAR _t = MAX ( fact_operacion_min[fecha_hora] )
+RETURN
+    CALCULATE ( MAX ( fact_operacion_min[desbalance_60min_pct] ), fact_operacion_min[fecha_hora] = _t )
+
+Último Umbral 60 min % =
+VAR _t = MAX ( fact_operacion_min[fecha_hora] )
+RETURN
+    CALCULATE ( MAX ( fact_operacion_min[umbral_60min_pct] ), fact_operacion_min[fecha_hora] = _t )
+
+Estado del Balance =
+IF ( [Último Desbalance 60 min %] > [Último Umbral 60 min %], "En alarma", "Normal" )
+
+// ---------- Carpeta: Energía y emisiones -------------------------------------
+
+Energía MWh =
+SUM ( fact_operacion_min[energia_kwh] ) / 1000
+
+Intensidad Energética kWh/t =
+DIVIDE ( SUM ( fact_operacion_min[energia_kwh] ), [Sólidos Transportados t] )
+
+Emisiones tCO2e =
+SUM ( fact_operacion_min[emisiones_tco2e] )
+
+Potencia Media kW =
+AVERAGE ( fact_operacion_min[potencia_bombeo_kw] )
+
+// ---------- Carpeta: Presión y envolvente ------------------------------------
+
+Presión Media bar =
+AVERAGE ( fact_presion_min[presion_bar] )
+
+Presión Máxima bar =
+MAX ( fact_presion_min[presion_bar] )
+
+% MAOP Máximo =
+DIVIDE ( [Presión Máxima bar], MAX ( dim_estacion[maop_bar] ) )
+
+Alertas de Envolvente =
+COUNTROWS ( fact_alertas_envolvente )
+
+// ---------- Carpeta: Integridad (detección de fugas) -------------------------
+
+Fugas Confirmadas =
+CALCULATE (
+    COUNTROWS ( fact_alarmas ),
+    fact_alarmas[tipo] = "Fuga",
+    fact_alarmas[estado] = "Confirmada"
+)
+
+Falsas Alarmas =
+SUM ( fact_alarmas[es_falsa_alarma] )
+
+Transitorios Rechazados =
+CALCULATE ( COUNTROWS ( fact_alarmas ), fact_alarmas[estado] = "Rechazada" )
+
+Tiempo Medio a la Alarma min =
+CALCULATE ( AVERAGE ( fact_alarmas[tiempo_alarma_min] ), fact_alarmas[tipo] = "Fuga" )
+
+Error Medio de Ubicación km =
+CALCULATE ( AVERAGE ( fact_alarmas[error_km] ), fact_alarmas[tipo] = "Fuga" )
+
+Volumen Perdido m3 =
+SUM ( fact_fugas_reales[volumen_perdido_m3] )
+
+// Texto para la tarjeta de la página de detalle (drill-through por fuga)
+Resumen de la Alarma =
+VAR _km = SELECTEDVALUE ( fact_alarmas[km_estimado] )
+VAR _real = SELECTEDVALUE ( fact_alarmas[km_real] )
+VAR _met = SELECTEDVALUE ( fact_alarmas[metodo] )
+VAR _t = SELECTEDVALUE ( fact_alarmas[tiempo_alarma_min] )
+RETURN
+    _met & " · alarma a los " & FORMAT ( _t, "0.0" ) & " min · km estimado "
+        & FORMAT ( _km, "0.0" ) & " (real " & FORMAT ( _real, "0.0" ) & ")"
+
+// ---------- Carpeta: Salud del gemelo e instrumentos -------------------------
+
+Residuo Absoluto Medio bar =
+AVERAGEX ( fact_presion_min, ABS ( fact_presion_min[residuo_bar] ) )
+
+Disponibilidad de Transmisores % =
+DIVIDE ( SUM ( fact_presion_min[dato_valido] ), COUNTROWS ( fact_presion_min ) )
+
+Alertas de Instrumentos =
+COUNTROWS ( fact_alertas_instrumentos )
+
+Error Medio de Llegada de Batch min =
+AVERAGEX ( fact_batches, ABS ( fact_batches[error_min] ) )
+
+// ---------- Carpeta: Desempeño del sistema (Monte Carlo) ---------------------
+
+Probabilidad de Detección % =
+AVERAGE ( fact_mc_desempeno[detectada] )
+
+Tiempo de Detección Mediana min =
+CALCULATE (
+    MEDIAN ( fact_mc_desempeno[tiempo_deteccion_min] ),
+    fact_mc_desempeno[detectada] = 1
+)
+
+Error de Ubicación Mediana km =
+MEDIAN ( fact_mc_desempeno[error_ubicacion_km] )
+
+// Menor tamaño de fuga detectado en al menos el 90 % de los escenarios
+Fuga Mínima Detectable (90%) % =
+MINX (
+    FILTER (
+        VALUES ( fact_mc_desempeno[tamano_pct] ),
+        CALCULATE ( AVERAGE ( fact_mc_desempeno[detectada] ) ) >= 0.9
+    ),
+    fact_mc_desempeno[tamano_pct]
+)
+
+Falsas Alarmas por Día (sin fuga) =
+DIVIDE ( SUM ( fact_mc_sin_fuga[falsas_alarmas] ), SUM ( fact_mc_sin_fuga[horas] ) / 24 )

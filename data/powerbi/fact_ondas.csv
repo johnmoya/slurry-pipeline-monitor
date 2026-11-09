@@ -1,0 +1,26 @@
+id_onda,fecha_hora_emision,origen,km_origen,n_estaciones,amplitud_max_bar
+ON-001,2026-10-01 06:59:56,Estación de bombeo,0.0,8,3.86
+ON-002,2026-10-01 18:00:26,Terminal,80.0,5,0.36
+ON-003,2026-10-01 22:00:03,Terminal,80.0,5,0.463
+ON-004,2026-10-02 06:59:56,Estación de bombeo,0.0,8,3.457
+ON-005,2026-10-02 19:10:59,Estación de bombeo,0.0,2,0.658
+ON-006,2026-10-03 06:59:56,Estación de bombeo,0.0,8,3.414
+ON-007,2026-10-03 12:00:27,Terminal,80.0,7,0.69
+ON-008,2026-10-04 06:59:56,Estación de bombeo,0.0,8,3.424
+ON-009,2026-10-04 10:15:03,Interior,51.95,6,0.553
+ON-010,2026-10-05 06:59:56,Estación de bombeo,0.0,8,3.703
+ON-011,2026-10-05 08:59:57,Estación de bombeo,0.0,5,0.682
+ON-012,2026-10-06 06:59:56,Estación de bombeo,0.0,8,3.309
+ON-013,2026-10-06 16:43:19,Estación de bombeo,0.0,7,0.702
+ON-014,2026-10-07 06:59:56,Estación de bombeo,0.0,8,3.654
+ON-015,2026-10-07 10:00:04,Terminal,80.0,7,0.676
+ON-016,2026-10-08 06:59:56,Estación de bombeo,0.0,8,3.701
+ON-017,2026-10-09 06:59:56,Estación de bombeo,0.0,8,3.324
+ON-018,2026-10-10 06:59:56,Estación de bombeo,0.0,8,3.38
+ON-019,2026-10-10 15:00:26,Terminal,80.0,5,0.353
+ON-020,2026-10-11 06:59:56,Estación de bombeo,0.0,8,3.442
+ON-021,2026-10-11 12:20:05,Interior (frente incompleto),,2,0.144
+ON-022,2026-10-12 06:59:56,Estación de bombeo,0.0,8,3.393
+ON-023,2026-10-13 06:59:56,Estación de bombeo,0.0,8,3.276
+ON-024,2026-10-14 06:59:56,Estación de bombeo,0.0,8,3.684
+ON-025,2026-10-14 17:30:26,Una estación,,1,0.162

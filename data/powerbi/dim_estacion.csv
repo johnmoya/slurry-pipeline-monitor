@@ -1,0 +1,9 @@
+id_estacion,nombre,km,elevacion_m,maop_bar,alerta_maop_bar,orden
+PT-01,Estación de Bombeo PS-1,0.0,900.0,175,157.5,1
+PT-02,Monitoreo km 12,12.0,1037.3,140,126.0,2
+PT-03,Monitoreo km 25,25.0,1150.0,110,99.0,3
+PT-04,Monitoreo km 38,38.0,1041.0,100,90.0,4
+PT-05,Monitoreo km 50,50.0,915.0,90,81.0,5
+PT-06,Monitoreo km 62,62.0,796.0,80,72.0,6
+PT-07,Monitoreo km 72,72.0,700.0,70,63.0,7
+PT-08,Terminal / Planta de Filtros,80.0,600.0,60,54.0,8
