@@ -1,0 +1,1108 @@
+<title>Monitor Ducto Cu-80</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Tablero de monitoreo de un ducto de concentrado de 80 km con datos SCADA simulados: operación, detección de fugas, envolvente, desempeño e instrumentos.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: control-room console. Header band with period filter, tab rail, 12-column card grid;
+   summary tiles first, charts next, tables last. Steel-biased neutrals, one blue accent,
+   status colours reserved for alarm state. */
+:root {
+  --bg: #eef1f3;
+  --surface: #fcfdfd;
+  --surface-2: #f3f5f7;
+  --ink: #0e1215;
+  --ink-2: #4b535c;
+  --muted: #7d848c;
+  --grid: #e3e7ea;
+  --axis: #c3c9ce;
+  --border: rgba(14, 18, 21, 0.10);
+  --accent: #2a78d6;
+  --accent-wash: rgba(42, 120, 214, 0.10);
+  --onda: #2a78d6;
+  --balance: #eb6834;
+  --gemelo: #1baf7a;
+  --crit: #d03b3b;
+  --crit-ink: #b52f2f;
+  --crit-wash: rgba(208, 59, 59, 0.11);
+  --warn: #fab219;
+  --warn-ink: #8a5a00;
+  --warn-wash: rgba(250, 178, 25, 0.18);
+  --good: #0ca30c;
+  --good-ink: #006300;
+  --neutral-wash: rgba(125, 132, 140, 0.14);
+  --s1: #86b6ef; --s2: #6da7ec; --s3: #5598e7; --s4: #3987e5;
+  --s5: #2a78d6; --s6: #256abf; --s7: #184f95; --s8: #0d366b;
+  --seq0: #eef4fc; --seq1: #9ec5f4; --seq2: #3987e5; --seq3: #104281;
+  --font-ui: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-head: "Barlow Semi Condensed", "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0d0f; --surface: #15181b; --surface-2: #1c2024; --ink: #eef0f2; --ink-2: #bfc5cb;
+    --muted: #8a9198; --grid: #262b30; --axis: #3a4148; --border: rgba(255, 255, 255, 0.10);
+    --accent: #3987e5; --accent-wash: rgba(57, 135, 229, 0.16);
+    --onda: #3987e5; --balance: #d95926; --gemelo: #199e70;
+    --crit: #e05252; --crit-ink: #f08a8a; --crit-wash: rgba(224, 82, 82, 0.16);
+    --warn: #fab219; --warn-ink: #fab219; --warn-wash: rgba(250, 178, 25, 0.16);
+    --good: #0ca30c; --good-ink: #3fc23f; --neutral-wash: rgba(138, 145, 152, 0.18);
+    --s1: #b7d3f6; --s2: #9ec5f4; --s3: #86b6ef; --s4: #6da7ec;
+    --s5: #5598e7; --s6: #3987e5; --s7: #2a78d6; --s8: #256abf;
+    --seq0: #1a2129; --seq1: #1c5cab; --seq2: #5598e7; --seq3: #cde2fb;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b0d0f; --surface: #15181b; --surface-2: #1c2024; --ink: #eef0f2; --ink-2: #bfc5cb;
+  --muted: #8a9198; --grid: #262b30; --axis: #3a4148; --border: rgba(255, 255, 255, 0.10);
+  --accent: #3987e5; --accent-wash: rgba(57, 135, 229, 0.16);
+  --onda: #3987e5; --balance: #d95926; --gemelo: #199e70;
+  --crit: #e05252; --crit-ink: #f08a8a; --crit-wash: rgba(224, 82, 82, 0.16);
+  --warn: #fab219; --warn-ink: #fab219; --warn-wash: rgba(250, 178, 25, 0.16);
+  --good: #0ca30c; --good-ink: #3fc23f; --neutral-wash: rgba(138, 145, 152, 0.18);
+  --s1: #b7d3f6; --s2: #9ec5f4; --s3: #86b6ef; --s4: #6da7ec;
+  --s5: #5598e7; --s6: #3987e5; --s7: #2a78d6; --s8: #256abf;
+  --seq0: #1a2129; --seq1: #1c5cab; --seq2: #5598e7; --seq3: #cde2fb;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.45 var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+.wrap {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* ---------- header ---------- */
+header.top { background: var(--surface); border-bottom: 1px solid var(--border); }
+header.top .wrap { padding-block: 20px 0; display: grid; gap: 14px; }
+.title-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.eyebrow {
+  font: 600 12px/1 var(--font-head); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+  margin: 0 0 6px;
+}
+h1 { font: 700 30px/1.05 var(--font-head); margin: 0; letter-spacing: 0.005em; text-wrap: balance; }
+.specs { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; color: var(--ink-2); font-size: 13.5px; }
+.specs span { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sim-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+  background: var(--warn-wash); color: var(--warn-ink); font: 600 12px/1.6 var(--font-head);
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+.period { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
+.field { display: grid; gap: 4px; }
+.field label { font: 600 11.5px/1 var(--font-head); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+select, button { font: inherit; color: inherit; }
+select {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 28px 6px 10px;
+  font-size: 14px; min-width: 0; max-width: 100%;
+}
+.btn {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px;
+  font-size: 13.5px; cursor: pointer;
+}
+.btn:hover { border-color: var(--axis); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+nav.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; margin-bottom: -1px; }
+nav.tabs::-webkit-scrollbar { display: none; }
+nav.tabs button {
+  background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px 11px;
+  font: 600 15px/1 var(--font-head); letter-spacing: 0.02em; color: var(--ink-2); cursor: pointer; white-space: nowrap;
+}
+nav.tabs button:hover { color: var(--ink); }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+nav.tabs .count {
+  display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: var(--crit-wash);
+  color: var(--crit-ink); font-size: 12px; font-variant-numeric: tabular-nums;
+}
+
+/* ---------- content ---------- */
+main .wrap { padding-block: 20px 40px; }
+section.tab { display: grid; gap: 16px; }
+.lede { margin: 0; color: var(--ink-2); max-width: 78ch; }
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; }
+.c12 { grid-column: span 12; } .c8 { grid-column: span 8; } .c6 { grid-column: span 6; } .c4 { grid-column: span 4; }
+@media (max-width: 960px) { .c8, .c6, .c4 { grid-column: span 12; } }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 14px 16px 12px; min-width: 0; display: grid; gap: 6px; align-content: start;
+}
+.card h2 { font: 600 17px/1.2 var(--font-head); margin: 0; letter-spacing: 0.01em; }
+.card .sub { font-size: 13px; color: var(--muted); margin: 0; }
+.card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 12px; }
+.chart { width: 100%; height: 280px; }
+.chart.tall { height: 340px; }
+.chart.short { height: 220px; }
+.note { font-size: 13px; color: var(--ink-2); margin: 2px 0 0; }
+
+/* KPI tiles */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.kpi {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 14px; display: grid; gap: 2px; min-width: 0;
+}
+.kpi .k { font: 600 12px/1.2 var(--font-head); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.kpi .v { font: 600 28px/1.15 var(--font-head); font-variant-numeric: tabular-nums; }
+.kpi .v small { font: 500 14px var(--font-ui); color: var(--ink-2); margin-left: 3px; }
+.kpi .d { font-size: 12.5px; color: var(--ink-2); }
+.kpi.alert { box-shadow: inset 3px 0 0 var(--crit); }
+.kpi.ok { box-shadow: inset 3px 0 0 var(--good); }
+
+/* status pills */
+.pill {
+  display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px 2px 6px; border-radius: 999px;
+  font: 600 12.5px/1.5 var(--font-head); letter-spacing: 0.02em; white-space: nowrap;
+}
+.pill svg { width: 13px; height: 13px; flex: none; }
+.pill.crit { background: var(--crit-wash); color: var(--crit-ink); }
+.pill.warn { background: var(--warn-wash); color: var(--warn-ink); }
+.pill.neutral { background: var(--neutral-wash); color: var(--ink-2); }
+.pill.good { background: rgba(12, 163, 12, 0.12); color: var(--good-ink); }
+
+/* leak cards */
+.leaks { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.leak {
+  text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 14px; display: grid; gap: 8px; cursor: pointer; min-width: 0;
+}
+.leak:hover { border-color: var(--axis); }
+.leak[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.leak .row1 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.leak .id { font: 700 20px/1 var(--font-head); }
+.leak dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: 13px; }
+.leak dt { color: var(--muted); }
+.leak dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
+.method-tag { font-size: 12.5px; color: var(--ink-2); }
+
+/* segmented control & chips */
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; background: var(--surface-2); }
+.seg button { border: 0; background: none; padding: 6px 12px; font-size: 13.5px; cursor: pointer; color: var(--ink-2); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  border: 1px solid var(--border); background: var(--surface-2); border-radius: 999px; padding: 3px 10px;
+  font-size: 13px; cursor: pointer; color: var(--ink-2); display: inline-flex; gap: 6px; align-items: center;
+}
+.chip[aria-pressed="true"] { border-color: var(--accent); color: var(--ink); background: var(--accent-wash); }
+.chip .n { font-variant-numeric: tabular-nums; color: var(--muted); }
+
+/* tables */
+.table-wrap { overflow: auto; max-height: 360px; border-top: 1px solid var(--border); margin-top: 4px; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th {
+  position: sticky; top: 0; background: var(--surface); z-index: 1; font: 600 12px/1.3 var(--font-head);
+  letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted);
+}
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.when { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover td { background: var(--surface-2); }
+.empty { color: var(--muted); padding: 14px 10px; }
+
+/* detail */
+.detail-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.detail-head h2 { font: 700 22px/1.1 var(--font-head); margin: 0; }
+.summary { margin: 0; color: var(--ink-2); max-width: 90ch; }
+
+/* slider */
+.slider-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.slider-row input[type="range"] { flex: 1 1 240px; accent-color: var(--accent); }
+.slider-row output { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 11ch; }
+
+footer { border-top: 1px solid var(--border); background: var(--surface); }
+footer .wrap { padding-block: 22px 34px; display: grid; gap: 10px; color: var(--ink-2); font-size: 13.5px; }
+footer h2 { font: 600 16px var(--font-head); margin: 0; color: var(--ink); }
+footer ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; max-width: 95ch; }
+footer a { color: var(--accent); }
+
+@media (max-width: 560px) {
+  h1 { font-size: 25px; }
+  .kpi .v { font-size: 24px; }
+  .chart { height: 250px; }
+  .chart.tall { height: 300px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+<!--HEAD-END-->
+<header class="top">
+  <div class="wrap">
+    <div class="title-row">
+      <div>
+        <p class="eyebrow">Sala de monitoreo · integridad de ductos</p>
+        <h1>Ducto de concentrado Cu-80</h1>
+        <div class="specs">
+          <span>80 km · Ø 200 mm</span>
+          <span>8 transmisores de presión</span>
+          <span>Pulpa 1.600 kg/m³ · 198 m³/h nominal</span>
+          <span>SCADA a 1 s · 14 días</span>
+          <span class="sim-chip" title="Todos los datos son sintéticos">Datos simulados</span>
+        </div>
+      </div>
+      <div class="period" role="group" aria-label="Período">
+        <div class="field"><label for="d0">Desde</label><select id="d0"></select></div>
+        <div class="field"><label for="d1">Hasta</label><select id="d1"></select></div>
+        <button class="btn" id="period-reset" type="button">Todo el período</button>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Secciones">
+      <button role="tab" id="t-operacion" data-tab="operacion">Operación</button>
+      <button role="tab" id="t-integridad" data-tab="integridad">Integridad <span class="count" id="leak-count"></span></button>
+      <button role="tab" id="t-envolvente" data-tab="envolvente">Envolvente</button>
+      <button role="tab" id="t-desempeno" data-tab="desempeno">Desempeño del sistema</button>
+      <button role="tab" id="t-instrumentos" data-tab="instrumentos">Instrumentos y energía</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <!-- ================= OPERACIÓN ================= -->
+    <section class="tab" id="tab-operacion" role="tabpanel" aria-labelledby="t-operacion">
+      <div class="kpis" id="kpi-op"></div>
+      <div class="grid">
+        <div class="card c12">
+          <div class="card-head"><h2>Caudal de entrada y en el terminal</h2><p class="sub">m³/h, promedio cada 3 min · las franjas rojas marcan fugas</p></div>
+          <div class="chart" id="c-flow"></div>
+        </div>
+        <div class="card c12">
+          <div class="card-head"><h2>Presión por estación</h2><p class="sub">bar · clic en la leyenda para ocultar estaciones</p></div>
+          <div class="chart tall" id="c-press"></div>
+        </div>
+        <div class="card c6">
+          <div class="card-head"><h2>Densidad: lanzamiento y llegada de batches</h2><p class="sub">kg/m³ · agua 1.000, pulpa 1.600</p></div>
+          <div class="chart short" id="c-dens"></div>
+        </div>
+        <div class="card c6">
+          <div class="card-head"><h2>Bitácora de operación</h2><p class="sub" id="ev-sub"></p></div>
+          <div class="table-wrap" style="max-height:240px"><table id="tbl-events"></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= INTEGRIDAD ================= -->
+    <section class="tab" id="tab-integridad" role="tabpanel" aria-labelledby="t-integridad" hidden>
+      <p class="lede">Dos métodos independientes vigilan el ducto. El <b>balance de volumen</b> compara lo que entra con lo que llega, corrigiendo por line pack. La <b>onda de presión</b> detecta el escalón negativo que genera una fuga repentina y la ubica por los tiempos de llegada. Selecciona una fuga para ver qué vio cada método.</p>
+      <div class="leaks" id="leak-cards"></div>
+      <div class="grid">
+        <div class="card c8">
+          <div class="card-head"><h2>Balance de volumen</h2><p class="sub">% del caudal nominal · línea segmentada = umbral adaptativo</p></div>
+          <div class="chart" id="c-balance"></div>
+        </div>
+        <div class="card c4">
+          <div class="card-head"><h2>Ubicación estimada vs real</h2><p class="sub">km</p></div>
+          <div class="chart" id="c-loc"></div>
+        </div>
+      </div>
+
+      <div class="card" id="detail">
+        <div class="detail-head"><h2 id="dt-title"></h2><span id="dt-pill"></span></div>
+        <p class="summary" id="dt-summary"></p>
+        <div class="grid">
+          <div class="c6" style="min-width:0">
+            <h2 style="font:600 15px var(--font-head);margin:6px 0 2px">Presión en cada transmisor</h2>
+            <p class="sub" style="margin:0">bar, relativa al minuto previo · segundos desde el inicio real de la fuga</p>
+            <div class="chart" id="c-zoom"></div>
+          </div>
+          <div class="c6" style="min-width:0">
+            <h2 style="font:600 15px var(--font-head);margin:6px 0 2px">Tiempos de llegada de la onda</h2>
+            <p class="sub" style="margin:0">segundos desde el inicio vs km · la fuga está en el vértice de la V</p>
+            <div class="chart" id="c-arr"></div>
+          </div>
+          <div class="c12" style="min-width:0">
+            <h2 style="font:600 15px var(--font-head);margin:6px 0 2px">Residuo del gemelo digital por estación</h2>
+            <p class="sub" style="margin:0">bar vs km, medido − modelo, 10 min después de la alarma · aguas arriba de la fuga la presión cae; el quiebre de pendiente la ubica</p>
+            <div class="chart short" id="c-firma"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Registro de alarmas</h2>
+          <div class="chips" id="estado-chips" role="group" aria-label="Filtrar por estado"></div>
+        </div>
+        <p class="sub">Las alarmas rechazadas son transitorios operacionales: ondas cuyo origen está en la estación de bombeo o en el terminal.</p>
+        <div class="table-wrap"><table id="tbl-alarms"></table></div>
+      </div>
+    </section>
+
+    <!-- ================= ENVOLVENTE ================= -->
+    <section class="tab" id="tab-envolvente" role="tabpanel" aria-labelledby="t-envolvente" hidden>
+      <div class="grid">
+        <div class="card c12">
+          <div class="card-head"><h2>Perfil del trazado</h2><p class="sub">elevación en m s.n.m. vs km</p></div>
+          <div class="chart short" id="c-elev"></div>
+        </div>
+        <div class="card c12">
+          <div class="card-head"><h2>Presión a lo largo del ducto vs límites de diseño</h2><p class="sub">bar vs km · los puntos son la medición en el instante elegido</p></div>
+          <div class="slider-row">
+            <label for="prof-slider" class="sub">Instante</label>
+            <input type="range" id="prof-slider" min="0" step="1">
+            <output id="prof-out" for="prof-slider"></output>
+            <button class="btn" id="jump-max" type="button">Ir a la presión máxima</button>
+            <button class="btn" id="jump-vmin" type="button">Ir al caudal mínimo</button>
+          </div>
+          <div class="chart tall" id="c-prof"></div>
+        </div>
+        <div class="card c6">
+          <div class="card-head"><h2>Velocidad de la pulpa</h2><p class="sub">m/s, mínimo cada 3 min</p></div>
+          <div class="chart short" id="c-vel"></div>
+        </div>
+        <div class="card c6">
+          <div class="card-head"><h2>Presión mínima en la línea</h2><p class="sub">bar · bajo 3 bar hay riesgo de flujo parcial (slack)</p></div>
+          <div class="chart short" id="c-pmin"></div>
+        </div>
+        <div class="card c12">
+          <div class="card-head"><h2>Alertas de envolvente</h2><p class="sub" id="env-sub"></p></div>
+          <div class="table-wrap"><table id="tbl-env"></table></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= DESEMPEÑO ================= -->
+    <section class="tab" id="tab-desempeno" role="tabpanel" aria-labelledby="t-desempeno" hidden>
+      <div class="card-head">
+        <p class="lede" style="margin:0" id="mc-lede"></p>
+        <div class="seg" role="group" aria-label="Tipo de fuga" id="tipo-seg">
+          <button type="button" data-tipo="repentina">Fuga repentina</button>
+          <button type="button" data-tipo="gradual">Fuga gradual</button>
+        </div>
+      </div>
+      <div class="kpis" id="kpi-mc"></div>
+      <div class="grid">
+        <div class="card c4">
+          <div class="card-head"><h2>Probabilidad de detección</h2><p class="sub">% de escenarios</p></div>
+          <div class="chart" id="c-mc-p"></div>
+          <p class="note">El gemelo no aparece aquí porque no detecta por sí solo: ubica la fuga después de que el balance da la alarma.</p>
+        </div>
+        <div class="card c4">
+          <div class="card-head"><h2>Tiempo de detección</h2><p class="sub">mediana, minutos (escala log)</p></div>
+          <div class="chart" id="c-mc-t"></div>
+        </div>
+        <div class="card c4">
+          <div class="card-head"><h2>Error de ubicación</h2><p class="sub">mediana, km</p></div>
+          <div class="chart" id="c-mc-e"></div>
+        </div>
+        <div class="card c6">
+          <div class="card-head"><h2>Compensar el line pack evita falsas alarmas</h2><p class="sub">falsas alarmas del balance en los 13 días monitoreados</p></div>
+          <div class="chart short" id="c-mc-cmp"></div>
+          <p class="note">Cuando sube el caudal, la pulpa se comprime y el ducto “guarda” volumen: por unos minutos sale menos de lo que entra. Sin corregirlo, cada cambio de caudal parece una fuga.</p>
+        </div>
+        <div class="card c6">
+          <div class="card-head"><h2>Cómo leer estos resultados</h2></div>
+          <ul class="note" id="mc-read" style="margin:0;padding-left:18px;display:grid;gap:6px"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= INSTRUMENTOS Y ENERGÍA ================= -->
+    <section class="tab" id="tab-instrumentos" role="tabpanel" aria-labelledby="t-instrumentos" hidden>
+      <div class="kpis" id="kpi-inst"></div>
+      <div class="grid">
+        <div class="card c12">
+          <div class="card-head"><h2>Ajuste del gemelo digital</h2><p class="sub">residuo absoluto medio por estación y día, bar · un valor alto indica fuga, instrumento con falla o modelo descalibrado</p></div>
+          <div class="chart" id="c-heat"></div>
+        </div>
+        <div class="card c6">
+          <div class="card-head"><h2>Alertas de instrumentos</h2></div>
+          <div class="table-wrap"><table id="tbl-inst"></table></div>
+          <p class="note">Mientras un transmisor está en falla, su dato se reemplaza por la estimación del gemelo, así no genera alarmas.</p>
+        </div>
+        <div class="card c6">
+          <div class="card-head"><h2>Seguimiento de batches de agua</h2><p class="sub">llegada estimada por volumen bombeado vs llegada medida</p></div>
+          <div class="table-wrap"><table id="tbl-batch"></table></div>
+        </div>
+        <div class="card c6">
+          <div class="card-head"><h2>Energía de bombeo</h2><p class="sub">MWh por día</p></div>
+          <div class="chart short" id="c-energy"></div>
+        </div>
+        <div class="card c6">
+          <div class="card-head"><h2>Intensidad energética</h2><p class="sub">kWh por tonelada de concentrado transportada</p></div>
+          <div class="chart short" id="c-kwht"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <h2>Acerca de este tablero</h2>
+    <ul>
+      <li>Todos los datos son sintéticos: un simulador hidráulico genera 14 días de SCADA a 1 segundo para un ducto ficticio. No representa ninguna operación ni producto real.</li>
+      <li>El día 0 es de comisionamiento: con él se calibran la fricción del gemelo, el sesgo de los caudalímetros y los umbrales de detección.</li>
+      <li>El modelo es cuasi-estacionario con retardos de onda: no reproduce reflexiones ni flujo parcial. El factor de emisión es referencial.</li>
+      <li>Código, supuestos y tablas para Power BI en <a href="https://github.com/johnmoya/slurry-pipeline-monitor" target="_blank" rel="noopener">github.com/johnmoya/slurry-pipeline-monitor</a>.</li>
+    </ul>
+  </div>
+</footer>
+
+<script id="dash-data" type="application/json">__DATA__</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  const D = JSON.parse(document.getElementById("dash-data").textContent);
+  const MIN = 60000, DAY = 86400000;
+  const START = Date.parse(D.start + "Z");
+  const STEP = D.ts.step;
+  const N = D.ts.q_in.length;
+  const T = Array.from({ length: N }, (_, i) => START + i * STEP * MIN);
+  const NDAYS = D.days.length;
+  const ST = D.stations;
+  const FONT = "Barlow, system-ui, -apple-system, 'Segoe UI', sans-serif";
+  const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  const METHODS = [
+    { key: "Onda de presión", color: "--onda", short: "Onda de presión" },
+    { key: "Balance de volumen", color: "--balance", short: "Balance de volumen" },
+    { key: "Gemelo digital (gradiente)", color: "--gemelo", short: "Gemelo (gradiente)" },
+  ];
+
+  // helpers
+  const nfCache = {};
+  function fmt(v, d = 1) {
+    if (v === null || v === undefined || Number.isNaN(v)) return "–";
+    const k = String(d);
+    if (!nfCache[k]) nfCache[k] = new Intl.NumberFormat("es-CL", { minimumFractionDigits: d, maximumFractionDigits: d });
+    return nfCache[k].format(v);
+  }
+  const pad = (n) => String(n).padStart(2, "0");
+  function fdate(ms, time = true) {
+    const d = new Date(ms);
+    const s = pad(d.getUTCDate()) + " " + MES[d.getUTCMonth()];
+    return time ? s + " " + pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes()) : s;
+  }
+  const tmin = (m) => START + m * MIN;
+  const dec = (s) => String(s ?? "").replace(/(\d)\.(\d)/g, "$1,$2");
+  const dur = (m) => (m < 1 ? "< 1 min" : fmt(m, 0) + " min");
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function ramp() { return [1, 2, 3, 4, 5, 6, 7, 8].map((i) => css("--s" + i)); }
+  const $ = (id) => document.getElementById(id);
+
+  const ICON = {
+    crit: '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5 15 14H1L8 1.5Zm-.8 4.3v4.3h1.6V5.8H7.2Zm0 5.4v1.6h1.6v-1.6H7.2Z"/></svg>',
+    warn: '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="8" r="2.2" fill="currentColor"/></svg>',
+    neutral: '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m3.5 8.4 2.9 2.8 6-6.4"/></svg>',
+    good: '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m3.5 8.4 2.9 2.8 6-6.4"/></svg>',
+  };
+  function pill(kind, label) { return `<span class="pill ${kind}">${ICON[kind]}${esc(label)}</span>`; }
+  function estadoPill(estado) {
+    if (estado === "Confirmada") return pill("crit", "Fuga confirmada");
+    if (estado === "No confirmada") return pill("warn", "Aviso no confirmado");
+    return pill("neutral", "Transitorio rechazado");
+  }
+
+  // state
+  const state = { d0: 0, d1: NDAYS - 1, tipo: "repentina", leak: D.leaks[0].id,
+                  estados: new Set(["Confirmada", "No confirmada"]), pidx: 0, tab: "operacion" };
+  function range() { return [START + state.d0 * DAY, START + (state.d1 + 1) * DAY]; }
+  function inRange(tm) { const [a, b] = range(); const t = tmin(tm); return t >= a && t < b; }
+  function daysInRange() { return D.days.filter((d) => d.dia >= state.d0 && d.dia <= state.d1); }
+
+  // charts registry
+  const charts = {};
+  function def(id, build, group) { charts[id] = { build, inst: null, group }; }
+  function draw(id) {
+    const c = charts[id], el = $(id);
+    if (!c || !el || el.offsetParent === null) return;
+    if (!c.inst) {
+      c.inst = echarts.init(el, null, { renderer: "canvas" });
+      if (c.group) { c.inst.group = c.group; }
+      new ResizeObserver(() => c.inst && c.inst.resize()).observe(el);
+    }
+    c.inst.setOption(c.build(), true);
+    if (c.group) echarts.connect(c.group);
+  }
+  function drawTab(tab) {
+    document.querySelectorAll(`#tab-${tab} .chart`).forEach((el) => draw(el.id));
+  }
+  function disposeAll() { Object.values(charts).forEach((c) => { if (c.inst) { c.inst.dispose(); c.inst = null; } }); }
+
+  function base() {
+    return {
+      animation: false, useUTC: true,
+      textStyle: { fontFamily: FONT, color: css("--ink-2") },
+      grid: { left: 52, right: 18, top: 34, bottom: 30 },
+      legend: { top: 0, left: 0, icon: "roundRect", itemWidth: 14, itemHeight: 3, itemGap: 14,
+                textStyle: { color: css("--ink-2"), fontSize: 12, fontFamily: FONT },
+                inactiveColor: css("--axis") },
+      tooltip: { backgroundColor: css("--surface"), borderColor: css("--axis"), borderWidth: 1, padding: [8, 10],
+                 textStyle: { color: css("--ink"), fontFamily: FONT, fontSize: 12.5 },
+                 extraCssText: "box-shadow:0 6px 18px rgba(0,0,0,.14);border-radius:6px;", confine: true },
+    };
+  }
+  function valAxis(name, extra) {
+    return Object.assign({
+      type: "value", name, nameLocation: "end", nameGap: 12,
+      nameTextStyle: { color: css("--muted"), fontSize: 11, align: "left", padding: [0, 0, 0, -40] },
+      axisLine: { show: false }, axisTick: { show: false }, scale: true,
+      axisLabel: { color: css("--muted"), fontSize: 11, fontFamily: FONT, formatter: (v) => fmt(v, Number.isInteger(v) ? 0 : (Math.abs(v * 10) % 1 > 1e-9 ? 2 : 1)) },
+      splitLine: { lineStyle: { color: css("--grid") } },
+    }, extra || {});
+  }
+  function catAxisLine() { return { lineStyle: { color: css("--axis") } }; }
+  function timeAxis() {
+    return {
+      type: "time", min: START, max: START + NDAYS * DAY,
+      axisLine: catAxisLine(), axisTick: { show: false }, splitLine: { show: false },
+      axisLabel: { color: css("--muted"), fontSize: 11, fontFamily: FONT, hideOverlap: true,
+        formatter: (v) => { const d = new Date(v); return d.getUTCHours() === 0 && d.getUTCMinutes() === 0 ? fdate(v, false) : pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes()); } },
+    };
+  }
+  function zoomCfg(withSlider) {
+    const [a, b] = range();
+    const z = [{ type: "inside", startValue: a, endValue: b, zoomOnMouseWheel: "ctrl", moveOnMouseWheel: false, moveOnMouseMove: true }];
+    if (withSlider) z.push({ type: "slider", startValue: a, endValue: b, height: 16, bottom: 4, showDetail: false,
+      borderColor: css("--border"), fillerColor: css("--accent-wash"), backgroundColor: "transparent",
+      dataBackground: { lineStyle: { color: css("--axis") }, areaStyle: { color: css("--grid") } },
+      handleStyle: { color: css("--surface"), borderColor: css("--axis") }, moveHandleSize: 0, brushSelect: false });
+    return z;
+  }
+  function ttTime(unit, dec) {
+    return {
+      trigger: "axis", axisPointer: { type: "line", lineStyle: { color: css("--axis") } },
+      formatter: (ps) => {
+        if (!ps.length) return "";
+        let h = `<div style="font-weight:600;margin-bottom:4px">${fdate(ps[0].value[0])}</div>`;
+        ps.forEach((p) => {
+          if (p.value[1] === null || p.value[1] === undefined) return;
+          h += `<div style="display:flex;gap:14px;justify-content:space-between"><span>${p.marker}${esc(p.seriesName)}</span><b style="font-variant-numeric:tabular-nums">${fmt(p.value[1], dec)} ${unit}</b></div>`;
+        });
+        return h;
+      },
+    };
+  }
+  function line(name, data, color, extra) {
+    return Object.assign({ name, type: "line", data, showSymbol: false, symbol: "circle", symbolSize: 8,
+      lineStyle: { width: 1.8, color }, itemStyle: { color }, sampling: "lttb", emphasis: { disabled: true } }, extra || {});
+  }
+  const pairs = (arr) => arr.map((v, i) => [T[i], v]);
+  function leakAreas() {
+    return {
+      silent: true, itemStyle: { color: css("--crit-wash") },
+      label: { show: true, position: "insideTop", color: css("--crit-ink"), fontSize: 11, fontWeight: 600, fontFamily: FONT },
+      data: D.leaks.map((l) => [{ name: l.id, xAxis: tmin(l.inicio) }, { xAxis: tmin(Math.max(l.fin, l.inicio + 45)) }]),
+    };
+  }
+
+  // period controls
+  function initPeriod() {
+    const opts = D.days.map((d) => `<option value="${d.dia}">Día ${d.dia} · ${fdate(tmin(d.dia * 1440), false)}${d.dia === 0 ? " (comisionamiento)" : ""}</option>`).join("");
+    $("d0").innerHTML = opts; $("d1").innerHTML = opts;
+    $("d0").value = state.d0; $("d1").value = state.d1;
+    $("d0").addEventListener("change", () => { state.d0 = +$("d0").value; if (state.d1 < state.d0) { state.d1 = state.d0; $("d1").value = state.d1; } refresh(); });
+    $("d1").addEventListener("change", () => { state.d1 = +$("d1").value; if (state.d0 > state.d1) { state.d0 = state.d1; $("d0").value = state.d0; } refresh(); });
+    $("period-reset").addEventListener("click", () => { state.d0 = 0; state.d1 = NDAYS - 1; $("d0").value = 0; $("d1").value = NDAYS - 1; refresh(); });
+  }
+
+  // KPI tiles
+  function kpi(label, value, unit, detail, cls) {
+    return `<div class="kpi ${cls || ""}"><span class="k">${label}</span><span class="v">${value}${unit ? `<small>${unit}</small>` : ""}</span>${detail ? `<span class="d">${detail}</span>` : ""}</div>`;
+  }
+  function renderKpiOp() {
+    const ds = daysInRange();
+    const sum = (k) => ds.reduce((a, d) => a + (d[k] || 0), 0);
+    const fugas = sum("fugas"), falsas = sum("falsas"), rech = sum("rechazados");
+    const disp = ds.reduce((a, d) => a + d.disp, 0) / Math.max(ds.length, 1);
+    const nd = ds.length;
+    $("kpi-op").innerHTML = [
+      kpi("Volumen bombeado", fmt(sum("vol"), 0), "m³", `${nd} ${nd === 1 ? "día" : "días"}`),
+      kpi("Concentrado transportado", fmt(sum("solidos"), 0), "t", `${fmt(sum("solidos") / nd, 0)} t/día`),
+      kpi("Fugas confirmadas", fmt(fugas, 0), "", fugas ? "ver pestaña Integridad" : "sin fugas en el período", fugas ? "alert" : "ok"),
+      kpi("Falsas alarmas", fmt(falsas, 0), "", "alarmas de fuga sin fuga real", falsas ? "alert" : "ok"),
+      kpi("Transitorios rechazados", fmt(rech, 0), "", "rotación de bombas, válvula terminal"),
+      kpi("Disponibilidad de transmisores", fmt(disp, 1), "%", "minutos con dato válido"),
+    ].join("");
+  }
+
+  // OPERACIÓN charts
+  def("c-flow", () => {
+    const r = ramp();
+    return Object.assign(base(), {
+      grid: { left: 52, right: 18, top: 34, bottom: 46 },
+      tooltip: Object.assign(base().tooltip, ttTime("m³/h", 1)),
+      xAxis: timeAxis(), yAxis: valAxis(""), dataZoom: zoomCfg(true),
+      series: [
+        line("Entrada (estación de bombeo)", pairs(D.ts.q_in), r[2], { markArea: leakAreas() }),
+        line("Llegada al terminal", pairs(D.ts.q_out), r[6]),
+      ],
+    });
+  }, "time");
+  def("c-press", () => {
+    const r = ramp();
+    return Object.assign(base(), {
+      grid: { left: 52, right: 18, top: 56, bottom: 46 },
+      tooltip: Object.assign(base().tooltip, ttTime("bar", 1)),
+      xAxis: timeAxis(), yAxis: valAxis(""), dataZoom: zoomCfg(true),
+      series: ST.map((s, i) => line(`${s.id} · km ${fmt(s.km, 0)}`, pairs(D.p[i]), r[i], { lineStyle: { width: 1.4, color: r[i] }, markArea: i === 0 ? leakAreas() : undefined })),
+    });
+  }, "time");
+  def("c-dens", () => {
+    const r = ramp();
+    return Object.assign(base(), {
+      grid: { left: 52, right: 18, top: 34, bottom: 46 },
+      tooltip: Object.assign(base().tooltip, ttTime("kg/m³", 0)),
+      xAxis: timeAxis(), yAxis: valAxis("", { min: 900, max: 1700, scale: false }), dataZoom: zoomCfg(true),
+      series: [line("Entrada", pairs(D.ts.rho_in), r[2], { step: "end", sampling: undefined }),
+               line("Terminal", pairs(D.ts.rho_out), r[6], { step: "end", sampling: undefined })],
+    });
+  }, "time");
+  function renderEvents() {
+    const rows = D.events.filter((e) => inRange(e.t));
+    $("ev-sub").textContent = `${rows.length} eventos en el período`;
+    $("tbl-events").innerHTML = `<thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th></tr></thead><tbody>` +
+      (rows.length ? rows.map((e) => `<tr><td class="when">${fdate(tmin(e.t))}</td><td>${esc(e.tipo)}</td><td>${esc(e.descripcion)}</td></tr>`).join("")
+        : `<tr><td colspan="3" class="empty">Sin eventos en el período.</td></tr>`) + "</tbody>";
+  }
+
+  // INTEGRIDAD
+  function leakById(id) { return D.leaks.find((l) => l.id === id); }
+  function renderLeakCards() {
+    $("leak-cards").innerHTML = D.leaks.map((l) => {
+      const tAl = l.t_alarma < 1 ? `${fmt(l.t_alarma * 60, 0)} s` : `${fmt(l.t_alarma, 0)} min`;
+      return `<button type="button" class="leak" data-leak="${l.id}" aria-pressed="${l.id === state.leak}">
+        <div class="row1"><span class="id">${l.id}</span>${pill("crit", "Detectada")}</div>
+        <span class="method-tag">${esc(l.tipo)} · ${fmt(l.tam, 1)} % del caudal · km ${fmt(l.km, 1)}</span>
+        <dl>
+          <dt>Método</dt><dd>${esc(l.metodo)}</dd>
+          <dt>Primera alarma</dt><dd>${tAl} desde el inicio</dd>
+          <dt>Ubicación estimada</dt><dd>km ${fmt(l.km_final, 1)}</dd>
+          <dt>Error</dt><dd>${fmt(l.err, 2)} km</dd>
+        </dl></button>`;
+    }).join("");
+    document.querySelectorAll(".leak").forEach((b) => b.addEventListener("click", () => selectLeak(b.dataset.leak, true)));
+  }
+  function selectLeak(id, scroll) {
+    state.leak = id;
+    document.querySelectorAll(".leak").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.leak === id)));
+    renderDetail();
+    if (scroll) $("detail").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }
+  def("c-balance", () => {
+    const bal = css("--balance"), mu = css("--muted");
+    const ds = (a) => pairs(a.map((v) => (v === null ? null : Math.max(Math.min(v, 6), -2))));
+    return Object.assign(base(), {
+      grid: { left: 46, right: 18, top: 34, bottom: 46 },
+      tooltip: Object.assign(base().tooltip, ttTime("%", 2)),
+      xAxis: timeAxis(), yAxis: valAxis("", { min: -1.5, max: 5, scale: false }), dataZoom: zoomCfg(true),
+      series: [
+        line("Desbalance 60 min", ds(D.ts.d60), bal, { lineStyle: { width: 2, color: bal }, markArea: leakAreas() }),
+        line("Umbral 60 min", ds(D.ts.th60), bal, { lineStyle: { width: 1.2, type: [5, 4], color: bal } }),
+        line("Desbalance 10 min", ds(D.ts.d10), mu, { lineStyle: { width: 1.1, color: mu } }),
+        line("Umbral 10 min", ds(D.ts.th10), mu, { lineStyle: { width: 1, type: [5, 4], color: mu } }),
+      ],
+    });
+  }, "time");
+  def("c-loc", () => {
+    const ids = D.leaks.map((l) => l.id);
+    const acc = css("--accent"), crit = css("--crit");
+    return Object.assign(base(), {
+      grid: { left: 44, right: 18, top: 34, bottom: 30 },
+      tooltip: Object.assign(base().tooltip, { trigger: "item", formatter: (p) => {
+        const l = leakById(p.data.leak);
+        return `<b>${l.id}</b> · ${esc(l.metodo)}<br>Real: km ${fmt(l.km, 1)}<br>Estimada: km ${fmt(l.km_final, 1)}<br>Error: ${fmt(l.err, 2)} km`;
+      } }),
+      xAxis: valAxis("", { min: 0, max: 80, scale: false, interval: 20, nameTextStyle: { color: css("--muted"), fontSize: 11 } }),
+      yAxis: { type: "category", data: ids, inverse: true, axisLine: catAxisLine(), axisTick: { show: false },
+               axisLabel: { color: css("--ink-2"), fontWeight: 600, fontFamily: FONT } },
+      series: [
+        { name: "Real", type: "scatter", symbol: "circle", symbolSize: 15, z: 3,
+          itemStyle: { color: "transparent", borderColor: crit, borderWidth: 2.2 },
+          data: D.leaks.map((l) => ({ value: [l.km, l.id], leak: l.id })),
+          markLine: { silent: true, symbol: "none", lineStyle: { color: css("--grid"), type: "solid" }, label: { show: false },
+                      data: ST.map((s) => ({ xAxis: s.km })) } },
+        { name: "Estimada", type: "scatter", symbolSize: 9, z: 4, itemStyle: { color: acc, borderColor: css("--surface"), borderWidth: 1.5 },
+          data: D.leaks.map((l) => ({ value: [l.km_final, l.id], leak: l.id })) },
+      ],
+      legend: Object.assign(base().legend, { data: [{ name: "Real", icon: "circle" }, { name: "Estimada", icon: "circle" }] }),
+    });
+  });
+
+  def("c-zoom", () => {
+    const l = leakById(state.leak), r = ramp();
+    return Object.assign(base(), {
+      grid: { left: 46, right: 14, top: 56, bottom: 30 },
+      tooltip: Object.assign(base().tooltip, { trigger: "axis", axisPointer: { type: "line", lineStyle: { color: css("--axis") } },
+        formatter: (ps) => `<div style="font-weight:600;margin-bottom:4px">${fmt(ps[0].value[0], 0)} s</div>` +
+          ps.map((p) => `<div style="display:flex;gap:14px;justify-content:space-between"><span>${p.marker}${esc(p.seriesName)}</span><b>${fmt(p.value[1], 2)} bar</b></div>`).join("") }),
+      xAxis: valAxis("", { min: -120, max: 300, scale: false, splitLine: { show: false }, axisLine: catAxisLine(), nameTextStyle: { color: css("--muted"), fontSize: 11 } }),
+      yAxis: valAxis(""),
+      series: ST.map((s, i) => line(s.id, l.zoom.s.map((x, k) => [x, l.zoom.p[i][k]]), r[i], {
+        sampling: undefined, lineStyle: { width: 1.3, color: r[i] },
+        markLine: i === 0 ? { silent: true, symbol: "none", lineStyle: { color: css("--crit"), type: [4, 4], width: 1.2 },
+          label: { formatter: "inicio", color: css("--crit-ink"), fontFamily: FONT, fontSize: 11 }, data: [{ xAxis: 0 }] } : undefined,
+      })),
+    });
+  });
+  def("c-arr", () => {
+    const l = leakById(state.leak);
+    const opt = Object.assign(base(), {
+      grid: { left: 46, right: 18, top: 34, bottom: 30 },
+      xAxis: valAxis("", { min: 0, max: 80, scale: false, interval: 10, axisLine: catAxisLine(), nameTextStyle: { color: css("--muted"), fontSize: 11 } }),
+      yAxis: valAxis("", { min: 0, nameTextStyle: { color: css("--muted"), fontSize: 11, align: "left", padding: [0, 0, 0, -40] } }),
+      tooltip: Object.assign(base().tooltip, { trigger: "item", formatter: (p) => p.seriesName === "Llegada detectada"
+        ? `<b>${esc(p.data.id)}</b> · km ${fmt(p.value[0], 0)}<br>llegó a los ${fmt(p.value[1], 1)} s` : esc(p.seriesName) }),
+      series: [],
+    });
+    const marks = [{ xAxis: l.km, lineStyle: { color: css("--crit"), type: [4, 4] }, label: { formatter: `real ${fmt(l.km, 1)}`, color: css("--crit-ink"), position: "insideEndTop", fontFamily: FONT, fontSize: 11 } }];
+    if (!l.arrivals.length) {
+      const why = l.tipo === "Gradual"
+        ? "Fuga gradual: crece en horas y no genera un escalón de presión.\nLa detecta el balance de volumen."
+        : "La onda no superó el umbral en dos o más transmisores:\ncerca de la estación de bombeo la pulsación de las bombas\nmete ruido. La detectó el balance a los " + fmt(l.t_alarma, 0) + " min.";
+      opt.yAxis.max = 60;
+      opt.graphic = [{ type: "text", left: "center", top: "middle", style: { text: why, fill: css("--ink-2"), font: `500 13px ${FONT}`, align: "center", lineHeight: 19 } }];
+      opt.series.push({ type: "scatter", data: [], markLine: { silent: true, symbol: "none", data: marks } });
+      return opt;
+    }
+    const pts = l.arrivals.map((a) => ({ value: [a.km, a.s], id: a.id }));
+    opt.series.push({ name: "Llegada detectada", type: "scatter", symbolSize: 11, z: 3, data: pts,
+      itemStyle: { color: css("--onda"), borderColor: css("--surface"), borderWidth: 2 } });
+    if (l.wave && l.wave.km !== null) {
+      const km0 = l.wave.km, t0 = l.wave.t_emit;
+      opt.series.push(line("Ajuste: t₀ + |x − x₀| / a", [[0, t0 + km0], [km0, t0], [80, t0 + (80 - km0)]], css("--muted"), { sampling: undefined, lineStyle: { width: 1.2, color: css("--muted") }, z: 1 }));
+      marks.push({ xAxis: km0, lineStyle: { color: css("--onda"), type: "solid" }, label: { formatter: `estimada ${fmt(km0, 1)}`, color: css("--onda"), position: "insideEndBottom", fontFamily: FONT, fontSize: 11 } });
+    } else if (l.km_lo !== null) {
+      opt.series.push({ type: "scatter", data: [], markArea: { silent: true, itemStyle: { color: css("--accent-wash") },
+        label: { show: true, formatter: `frente incompleto:\norigen entre km ${fmt(l.km_lo, 0)} y ${fmt(l.km_hi, 0)}`, color: css("--ink-2"), fontFamily: FONT, fontSize: 11, position: "insideBottom" },
+        data: [[{ xAxis: l.km_lo }, { xAxis: l.km_hi }]] } });
+    }
+    opt.series[0].markLine = { silent: true, symbol: "none", data: marks };
+    opt.legend = Object.assign(base().legend, { show: !!(l.wave && l.wave.km !== null) });
+    return opt;
+  });
+  def("c-firma", () => {
+    const l = leakById(state.leak);
+    const g = css("--gemelo");
+    const pts = l.firma ? ST.slice(0, 7).map((s, i) => [s.km, l.firma[i]]) : [];
+    return Object.assign(base(), {
+      grid: { left: 46, right: 18, top: 24, bottom: 30 },
+      legend: { show: false },
+      tooltip: Object.assign(base().tooltip, { trigger: "item", formatter: (p) => p.seriesType === "line" ? `km ${fmt(p.value[0], 0)}: <b>${fmt(p.value[1], 2)} bar</b>` : "" }),
+      xAxis: valAxis("", { min: 0, max: 80, scale: false, interval: 10, axisLine: catAxisLine(), nameTextStyle: { color: css("--muted"), fontSize: 11 } }),
+      yAxis: valAxis(""),
+      series: [line("Residuo", pts, g, { showSymbol: true, symbolSize: 9, sampling: undefined, lineStyle: { width: 1.6, color: g },
+        itemStyle: { color: g, borderColor: css("--surface"), borderWidth: 1.5 },
+        markLine: { silent: true, symbol: "none", data: [
+          { xAxis: l.km, lineStyle: { color: css("--crit"), type: [4, 4] }, label: { formatter: `real ${fmt(l.km, 1)}`, color: css("--crit-ink"), fontFamily: FONT, fontSize: 11 } },
+          ...(l.km_gemelo !== null ? [{ xAxis: l.km_gemelo, lineStyle: { color: g }, label: { formatter: `gemelo ${fmt(l.km_gemelo, 1)}`, color: g, position: "insideEndBottom", fontFamily: FONT, fontSize: 11 } }] : []),
+        ] } })],
+    });
+  });
+  function renderDetail() {
+    const l = leakById(state.leak);
+    $("dt-title").textContent = `${l.id} · fuga ${l.tipo.toLowerCase()} de ${fmt(l.tam, 1)} % en el km ${fmt(l.km, 1)}`;
+    $("dt-pill").innerHTML = pill("crit", "Confirmada");
+    const tAl = l.t_alarma < 1 ? `${fmt(l.t_alarma * 60, 0)} segundos` : `${fmt(l.t_alarma, 0)} minutos`;
+    let s = `Primera alarma a los ${tAl} por ${l.metodo.toLowerCase()}`;
+    if (l.t_conf !== null && l.t_conf > l.t_alarma + 0.05) s += `, confirmada por el balance a los ${fmt(l.t_conf, 1)} minutos`;
+    s += `. Ubicación estimada en el km ${fmt(l.km_final, 1)} (error ${fmt(l.err, 2)} km). Tamaño estimado ${fmt(l.tam_est, 2)} % del caudal. Duró ${fmt(l.dur, 0)} min y se perdieron ${fmt(l.vol, 1)} m³ de pulpa.`;
+    $("dt-summary").textContent = s;
+    ["c-zoom", "c-arr", "c-firma"].forEach(draw);
+  }
+  const ESTADOS = ["Confirmada", "No confirmada", "Rechazada"];
+  function renderChips() {
+    const rows = D.alarms.filter((a) => inRange(a.t));
+    $("estado-chips").innerHTML = ESTADOS.map((e) => {
+      const n = rows.filter((a) => a.estado === e).length;
+      const lbl = e === "Confirmada" ? "Fugas confirmadas" : e === "No confirmada" ? "Avisos no confirmados" : "Transitorios rechazados";
+      return `<button type="button" class="chip" data-estado="${e}" aria-pressed="${state.estados.has(e)}">${lbl}<span class="n">${n}</span></button>`;
+    }).join("");
+    document.querySelectorAll("#estado-chips .chip").forEach((b) => b.addEventListener("click", () => {
+      const e = b.dataset.estado; state.estados.has(e) ? state.estados.delete(e) : state.estados.add(e); renderChips(); renderAlarms();
+    }));
+  }
+  function renderAlarms() {
+    const rows = D.alarms.filter((a) => inRange(a.t) && state.estados.has(a.estado));
+    $("tbl-alarms").innerHTML = `<thead><tr><th>Fecha</th><th>Estado</th><th>Método</th><th class="num">km estimado</th><th class="num">Tamaño est.</th><th>Motivo</th><th>Fuga real</th></tr></thead><tbody>` +
+      (rows.length ? rows.map((a) => {
+        const km = a.km_estimado !== null ? fmt(a.km_estimado, 1) : (a.km_rango_desde !== null ? `${fmt(a.km_rango_desde, 0)}–${fmt(a.km_rango_hasta, 0)}` : "–");
+        const click = a.id_fuga_real ? ` class="clickable" data-leak="${a.id_fuga_real}" tabindex="0"` : "";
+        return `<tr${click}><td class="when">${fdate(tmin(a.t))}</td><td>${estadoPill(a.estado)}</td><td>${esc(a.metodo)}</td><td class="num">${km}</td><td class="num">${a.tamano_est_pct !== null ? fmt(a.tamano_est_pct, 2) + " %" : "–"}</td><td>${esc(a.motivo)}</td><td>${a.id_fuga_real ? `<b>${a.id_fuga_real}</b>` : "–"}</td></tr>`;
+      }).join("") : `<tr><td colspan="7" class="empty">No hay alarmas con estos filtros en el período.</td></tr>`) + "</tbody>";
+    document.querySelectorAll("#tbl-alarms tr.clickable").forEach((tr) => {
+      const go = () => selectLeak(tr.dataset.leak, true);
+      tr.addEventListener("click", go);
+      tr.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+    });
+  }
+
+  // ENVOLVENTE
+  def("c-elev", () => {
+    const P = D.profile, r = ramp();
+    return Object.assign(base(), {
+      grid: { left: 52, right: 18, top: 26, bottom: 30 }, legend: { show: false },
+      tooltip: Object.assign(base().tooltip, { trigger: "axis", formatter: (ps) => `km ${fmt(ps[0].value[0], 1)}: <b>${fmt(ps[0].value[1], 0)} m</b>` }),
+      xAxis: valAxis("", { min: 0, max: 80, scale: false, interval: 10, axisLine: catAxisLine(), splitLine: { show: false }, nameTextStyle: { color: css("--muted"), fontSize: 11 } }),
+      yAxis: valAxis("", { min: 500, scale: false }),
+      series: [line("Elevación", P.km.map((k, i) => [k, P.elev[i]]), r[5], {
+        sampling: undefined, areaStyle: { color: css("--accent-wash") }, lineStyle: { width: 2, color: r[5] },
+        markLine: { silent: true, symbol: "none", lineStyle: { color: css("--axis"), type: "solid" },
+          label: { formatter: (p) => p.name, color: css("--muted"), fontSize: 10.5, fontFamily: FONT, position: "end" },
+          data: ST.map((s) => ({ xAxis: s.km, name: s.id })) } })],
+    });
+  });
+  function profIdxLabel(i) { return fdate(T[i]); }
+  def("c-prof", () => {
+    const P = D.profile, r = ramp(), crit = css("--crit");
+    const i = state.pidx;
+    const meas = ST.map((s, k) => ({ value: [s.km, D.p[k][i]], id: s.id, maop: s.maop }));
+    return Object.assign(base(), {
+      grid: { left: 52, right: 18, top: 56, bottom: 30 },
+      tooltip: Object.assign(base().tooltip, { trigger: "item", formatter: (p) => p.seriesName === "Medición"
+        ? `<b>${esc(p.data.id)}</b> · km ${fmt(p.value[0], 0)}<br>${fmt(p.value[1], 1)} bar (${fmt(p.value[1] / p.data.maop * 100, 0)} % de la MAOP)`
+        : `${esc(p.seriesName)}<br>km ${fmt(p.value[0], 1)}: <b>${fmt(p.value[1], 1)} bar</b>` }),
+      xAxis: valAxis("", { min: 0, max: 80, scale: false, interval: 10, axisLine: catAxisLine(), splitLine: { show: false }, nameTextStyle: { color: css("--muted"), fontSize: 11 } }),
+      yAxis: valAxis("", { min: 0, max: 180, scale: false }),
+      series: [
+        line("MAOP", P.km.map((k, j) => [k, P.maop[j]]), crit, { step: "end", sampling: undefined, lineStyle: { width: 2, color: crit } }),
+        line("90 % MAOP (alerta)", P.km.map((k, j) => [k, P.maop[j] * D.cfg.maop_frac]), crit, { step: "end", sampling: undefined, lineStyle: { width: 1.1, type: [5, 4], color: crit } }),
+        line("Nominal pulpa", P.km.map((k, j) => [k, P.p_slurry[j]]), r[5], { sampling: undefined, lineStyle: { width: 1.6, color: r[5] } }),
+        line("Nominal agua", P.km.map((k, j) => [k, P.p_water[j]]), r[1], { sampling: undefined, lineStyle: { width: 1.6, color: r[1] } }),
+        { name: "Medición", type: "scatter", symbolSize: 11, z: 5, data: meas,
+          itemStyle: { color: css("--ink"), borderColor: css("--surface"), borderWidth: 2 } },
+      ],
+    });
+  });
+  function initProfileSlider() {
+    const sl = $("prof-slider");
+    sl.max = N - 1;
+    let imax = 0; D.p[0].forEach((v, k) => { if (v !== null && v > D.p[0][imax]) imax = k; });
+    let ivmin = 0; D.ts.v.forEach((v, k) => { if (k > 480 && v !== null && v < D.ts.v[ivmin]) ivmin = k; });
+    if (ivmin === 0) ivmin = D.ts.v.indexOf(Math.min(...D.ts.v.filter((v) => v !== null)));
+    state.pidx = imax;
+    const upd = () => { $("prof-out").textContent = profIdxLabel(state.pidx); sl.value = state.pidx; draw("c-prof"); };
+    sl.addEventListener("input", () => { state.pidx = +sl.value; upd(); });
+    $("jump-max").addEventListener("click", () => { state.pidx = imax; upd(); });
+    $("jump-vmin").addEventListener("click", () => { state.pidx = ivmin; upd(); });
+    sl.value = state.pidx; $("prof-out").textContent = profIdxLabel(state.pidx);
+  }
+  def("c-vel", () => {
+    const r = ramp();
+    return Object.assign(base(), {
+      grid: { left: 46, right: 18, top: 30, bottom: 46 }, legend: { show: false },
+      tooltip: Object.assign(base().tooltip, ttTime("m/s", 2)),
+      xAxis: timeAxis(), yAxis: valAxis("", { min: 1.2, max: 2.0, scale: false }), dataZoom: zoomCfg(true),
+      series: [line("Velocidad", pairs(D.ts.v), r[5], { markLine: { silent: true, symbol: "none", data: [
+        { yAxis: D.cfg.v_alert, lineStyle: { color: css("--warn"), type: [5, 4], width: 1.4 }, label: { formatter: `alerta ${fmt(D.cfg.v_alert, 2)}`, color: css("--warn-ink"), position: "insideEndTop", fontFamily: FONT, fontSize: 11 } },
+        { yAxis: D.cfg.v_dep, lineStyle: { color: css("--crit"), type: "solid", width: 1.4 }, label: { formatter: `deposición ${fmt(D.cfg.v_dep, 2)}`, color: css("--crit-ink"), position: "insideEndBottom", fontFamily: FONT, fontSize: 11 } },
+      ] } })],
+    });
+  }, "time");
+  def("c-pmin", () => {
+    const r = ramp();
+    return Object.assign(base(), {
+      grid: { left: 46, right: 18, top: 30, bottom: 46 }, legend: { show: false },
+      tooltip: Object.assign(base().tooltip, ttTime("bar", 1)),
+      xAxis: timeAxis(), yAxis: valAxis("", { min: 0, scale: false }), dataZoom: zoomCfg(true),
+      series: [line("Presión mínima en línea", pairs(D.ts.pmin), r[5], { markLine: { silent: true, symbol: "none", data: [
+        { yAxis: D.cfg.p_min, lineStyle: { color: css("--crit"), width: 1.4 }, label: { formatter: `mínimo ${fmt(D.cfg.p_min, 0)} bar`, color: css("--crit-ink"), position: "insideEndTop", fontFamily: FONT, fontSize: 11 } },
+      ] } })],
+    });
+  }, "time");
+  function renderEnv() {
+    const rows = D.envelope.filter((e) => inRange(e.t));
+    $("env-sub").textContent = rows.length ? `${rows.length} alertas en el período` : "Sin alertas en el período";
+    $("tbl-env").innerHTML = `<thead><tr><th>Inicio</th><th>Alerta</th><th>Estación</th><th class="num">Duración</th><th>Detalle</th></tr></thead><tbody>` +
+      (rows.length ? rows.map((e) => `<tr><td class="when">${fdate(tmin(e.t))}</td><td>${pill("warn", e.tipo)}</td><td>${e.id_estacion ? esc(e.id_estacion) : "Línea completa"}</td><td class="num">${dur(e.duracion_min)}</td><td>${esc(dec(e.detalle))}</td></tr>`).join("")
+        : `<tr><td colspan="5" class="empty">La operación se mantuvo dentro de la envolvente.</td></tr>`) + "</tbody>";
+  }
+
+  // DESEMPEÑO
+  const SIZES = [0.5, 1, 2, 3, 5];
+  const DETECTORS = METHODS.filter((m) => m.key !== "Gemelo digital (gradiente)");
+  function mcSeries(field, opts) {
+    return ((opts && opts.methods) || METHODS).map((m) => {
+      const rows = D.mc.filter((x) => x.metodo === m.key && x.tipo === state.tipo);
+      const data = SIZES.map((s) => { const r = rows.find((x) => x.tam === s); return [s, r ? r[field] : null]; })
+        .filter((d) => d[1] !== null && !(opts && opts.positive && d[1] <= 0));
+      return line(m.short, data, css(m.color), { showSymbol: true, symbolSize: 9, sampling: undefined, connectNulls: false,
+        lineStyle: { width: 2, color: css(m.color) }, itemStyle: { color: css(m.color), borderColor: css("--surface"), borderWidth: 1.5 } });
+    });
+  }
+  function mcBase(name, yax, unit, dec) {
+    return Object.assign(base(), {
+      grid: { left: 46, right: 16, top: 78, bottom: 40 },
+      tooltip: Object.assign(base().tooltip, { trigger: "axis", axisPointer: { type: "line", lineStyle: { color: css("--axis") } },
+        formatter: (ps) => `<div style="font-weight:600;margin-bottom:4px">Fuga de ${fmt(ps[0].value[0], ps[0].value[0] < 1 ? 1 : 0)} %</div>` +
+          ps.map((p) => `<div style="display:flex;gap:14px;justify-content:space-between"><span>${p.marker}${esc(p.seriesName)}</span><b>${fmt(p.value[1], dec)} ${unit}</b></div>`).join("") }),
+      xAxis: valAxis("% del caudal", { min: 0, max: 5.5, scale: false, interval: 1, axisLine: catAxisLine(), splitLine: { show: false },
+        nameLocation: "middle", nameGap: 26, nameTextStyle: { color: css("--muted"), fontSize: 11 },
+        axisLabel: { color: css("--muted"), fontSize: 11, formatter: (v) => (v === 0 ? "" : fmt(v, 0)) } }),
+      yAxis: yax,
+    });
+  }
+  def("c-mc-p", () => Object.assign(mcBase("p", valAxis("%", { min: 0, max: 100, scale: false }), "%", 0), { series: mcSeries("pdet", { methods: DETECTORS }) }));
+  def("c-mc-t", () => Object.assign(mcBase("t", valAxis("min", { type: "log", logBase: 10, min: 0.1, max: 200, scale: false,
+    axisLabel: { color: css("--muted"), fontSize: 11, formatter: (v) => fmt(v, v < 1 ? 1 : 0) } }), "min", 1), { series: mcSeries("t_med", { positive: true, methods: DETECTORS }) }));
+  def("c-mc-e", () => Object.assign(mcBase("e", valAxis("", { min: 0, scale: false }), "km", 2),
+    { series: mcSeries("err_med").filter((s) => s.data.length) }));
+  def("c-mc-cmp", () => {
+    const rows = D.comparison;
+    const cols = [css("--muted"), css("--balance")];
+    return Object.assign(base(), {
+      grid: { left: 8, right: 40, top: 10, bottom: 20, containLabel: true }, legend: { show: false },
+      tooltip: Object.assign(base().tooltip, { trigger: "item", formatter: (p) => `${esc(p.name)}<br><b>${fmt(p.value, 0)}</b> falsas alarmas (${fmt(rows[p.dataIndex].por_dia, 1)} por día)` }),
+      xAxis: valAxis("", { min: 0, scale: false, splitLine: { lineStyle: { color: css("--grid") } } }),
+      yAxis: { type: "category", data: rows.map((r) => r.variante), inverse: true, axisLine: catAxisLine(), axisTick: { show: false },
+               axisLabel: { color: css("--ink-2"), fontSize: 12.5, fontFamily: FONT } },
+      series: [{ type: "bar", barWidth: 22, data: rows.map((r, k) => ({ value: r.falsas_alarmas, itemStyle: { color: cols[k], borderRadius: [0, 4, 4, 0] } })),
+        label: { show: true, position: "right", color: css("--ink"), fontFamily: FONT, fontWeight: 600, fontSize: 13, formatter: (p) => fmt(p.value, 0) } }],
+    });
+  });
+  function renderMc() {
+    document.querySelectorAll("#tipo-seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.tipo === state.tipo)));
+    const f = D.mc_free;
+    const mdl = (m) => { const r = D.mdl.find((x) => x.metodo === m && x.tipo === state.tipo); return r && r.min_pct !== null ? fmt(r.min_pct, r.min_pct < 1 ? 1 : 0) : "no detecta"; };
+    $("mc-lede").textContent = `${D.mc_n} escenarios de 6 horas con una fuga de 0,5 a 5 % en un punto aleatorio, con cambios de caudal, rotación de bombas y batches; y ${fmt(f.dias, 0)} días sin fuga para medir falsas alarmas.`;
+    $("kpi-mc").innerHTML = [
+      kpi("Fuga mínima detectable · onda", mdl("Onda de presión"), mdl("Onda de presión") === "no detecta" ? "" : "%", "detectada en ≥ 90 % de los casos"),
+      kpi("Fuga mínima detectable · balance", mdl("Balance de volumen"), "%", "el menor tamaño probado"),
+      kpi("Falsas alarmas confirmadas", fmt(f.confirmadas, 0), "", `en ${fmt(f.dias, 0)} días sin fuga`, f.confirmadas ? "alert" : "ok"),
+      kpi("Avisos no confirmados", fmt(f.falsas - f.confirmadas, 0), "", `${fmt((f.falsas - f.confirmadas) / f.dias, 2)} por día · quedan como aviso al operador`),
+    ].join("");
+    const pick = (m, s, k) => { const r = D.mc.find((x) => x.metodo === m && x.tipo === state.tipo && x.tam === s); return r ? r[k] : null; };
+    const items = state.tipo === "repentina" ? [
+      `La onda de presión avisa, en mediana, en menos de un minuto y ubica la fuga con un error mediano de ${fmt(pick("Onda de presión", 3, "err_med"), 1)} km, pero solo ve fugas repentinas desde un 2 a 3 %.`,
+      `El balance de volumen detectó todas las fugas, desde ${fmt(pick("Balance de volumen", 5, "t_med"), 0)} min (5 %) hasta ${fmt(pick("Balance de volumen", 0.5, "t_med"), 0)} min (0,5 %).`,
+      `El gemelo ubica bien desde un 2 % (error mediano ${fmt(pick("Gemelo digital (gradiente)", 2, "err_med"), 1)} km). En fugas chicas el residuo es parecido al error del modelo y la ubicación se vuelve poco confiable.`,
+    ] : [
+      "Una fuga que crece en 90 minutos no genera escalón de presión: la onda no la ve en ningún tamaño.",
+      `El balance la detecta en todos los casos, pero más lento: ${fmt(pick("Balance de volumen", 5, "t_med"), 0)} min para 5 % y ${fmt(pick("Balance de volumen", 0.5, "t_med"), 0)} min para 0,5 %.`,
+      `Para ubicarla queda el gemelo: error mediano de ${fmt(pick("Gemelo digital (gradiente)", 3, "err_med"), 1)} km a 3 %, que sube a ${fmt(pick("Gemelo digital (gradiente)", 0.5, "err_med"), 1)} km con 0,5 %. Por eso hacen falta los dos métodos y el modelo hidráulico.`,
+    ];
+    $("mc-read").innerHTML = items.map((t) => `<li>${esc(t)}</li>`).join("");
+  }
+
+  // INSTRUMENTOS Y ENERGÍA
+  def("c-heat", () => {
+    const vals = D.resid.map((x) => x[2]);
+    const sorted = [...vals].sort((a, b) => a - b);
+    const max = Math.max(0.6, sorted[Math.floor(sorted.length * 0.97)]);
+    return Object.assign(base(), {
+      grid: { left: 64, right: 18, top: 10, bottom: 64 }, legend: { show: false },
+      tooltip: Object.assign(base().tooltip, { trigger: "item", formatter: (p) => `${ST[p.value[1]].id} · ${fdate(tmin(D.days[p.value[0]].dia * 1440), false)}<br>Residuo medio <b>${fmt(p.value[2], 2)} bar</b>` }),
+      xAxis: { type: "category", data: D.days.map((d) => `D${d.dia}`), axisLine: catAxisLine(), axisTick: { show: false }, splitArea: { show: false },
+               axisLabel: { color: css("--muted"), fontSize: 11, fontFamily: FONT } },
+      yAxis: { type: "category", data: ST.map((s) => s.id), inverse: true, axisLine: { show: false }, axisTick: { show: false },
+               axisLabel: { color: css("--ink-2"), fontSize: 11.5, fontFamily: FONT } },
+      visualMap: { min: 0, max, calculable: false, orient: "horizontal", left: "center", bottom: 0, itemHeight: 160, itemWidth: 10,
+                   text: [`${fmt(max, 1)} bar`, "0"], textStyle: { color: css("--muted"), fontFamily: FONT, fontSize: 11 },
+                   inRange: { color: [css("--seq0"), css("--seq1"), css("--seq2"), css("--seq3")] } },
+      series: [{ type: "heatmap", data: D.resid, itemStyle: { borderColor: css("--surface"), borderWidth: 2, borderRadius: 3 },
+                 emphasis: { itemStyle: { borderColor: css("--ink"), borderWidth: 1.5 } } }],
+    });
+  });
+  function dayAxis() {
+    return { type: "category", data: D.days.map((d) => fdate(tmin(d.dia * 1440), false)), axisLine: catAxisLine(), axisTick: { show: false },
+             axisLabel: { color: css("--muted"), fontSize: 11, fontFamily: FONT, hideOverlap: true } };
+  }
+  function inDayRange(i) { return D.days[i].dia >= state.d0 && D.days[i].dia <= state.d1; }
+  def("c-energy", () => {
+    const acc = css("--accent");
+    return Object.assign(base(), {
+      grid: { left: 46, right: 14, top: 26, bottom: 30 }, legend: { show: false },
+      tooltip: Object.assign(base().tooltip, { trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: css("--neutral-wash") } },
+        formatter: (ps) => `${esc(ps[0].name)}<br><b>${fmt(ps[0].value, 1)} MWh</b> · ${fmt(D.days[ps[0].dataIndex].tco2, 1)} tCO₂e` }),
+      xAxis: dayAxis(), yAxis: valAxis("", { min: 0, scale: false }),
+      series: [{ type: "bar", barMaxWidth: 26, data: D.days.map((d, i) => ({ value: d.mwh,
+        itemStyle: { color: acc, opacity: inDayRange(i) ? 1 : 0.28, borderRadius: [4, 4, 0, 0] } })) }],
+    });
+  });
+  def("c-kwht", () => {
+    const g = css("--gemelo");
+    const pts = D.days.map((d) => d.kwh_t);
+    return Object.assign(base(), {
+      grid: { left: 46, right: 14, top: 26, bottom: 30 }, legend: { show: false },
+      tooltip: Object.assign(base().tooltip, { trigger: "axis", axisPointer: { type: "line", lineStyle: { color: css("--axis") } },
+        formatter: (ps) => `${esc(ps[0].name)}<br><b>${fmt(ps[0].value, 2)} kWh/t</b>` }),
+      xAxis: Object.assign(dayAxis(), { boundaryGap: true }), yAxis: valAxis(""),
+      series: [line("kWh/t", pts, g, { showSymbol: true, symbolSize: 8, sampling: undefined, lineStyle: { width: 2, color: g },
+        itemStyle: { color: g, borderColor: css("--surface"), borderWidth: 1.5 } })],
+    });
+  });
+  function renderInst() {
+    const ds = daysInRange();
+    const sum = (k) => ds.reduce((a, d) => a + (d[k] || 0), 0);
+    const sol = sum("solidos"), mwh = sum("mwh");
+    const disp = ds.reduce((a, d) => a + d.disp, 0) / Math.max(ds.length, 1);
+    const errB = D.batches.filter((b) => b.error_min !== null).map((b) => Math.abs(b.error_min));
+    $("kpi-inst").innerHTML = [
+      kpi("Disponibilidad de transmisores", fmt(disp, 2), "%", "minutos con dato válido"),
+      kpi("Alertas de instrumentos", fmt(D.instruments.filter((x) => inRange(x.t)).length, 0), "", "picos y transmisores congelados"),
+      kpi("Error de llegada de batches", fmt(errB.reduce((a, b) => a + b, 0) / errB.length, 1), "min", "en tránsitos de ~12,6 h"),
+      kpi("Energía de bombeo", fmt(mwh, 0), "MWh", `${fmt(mwh * 1000 / sol, 2)} kWh/t`),
+      kpi("Emisiones (referencial)", fmt(sum("tco2"), 0), "tCO₂e", `factor ${fmt(D.cfg.emission_factor, 2)} tCO₂e/MWh, a reemplazar por el oficial`),
+    ].join("");
+    const ir = D.instruments;
+    $("tbl-inst").innerHTML = `<thead><tr><th>Inicio</th><th>Estación</th><th>Falla</th><th class="num">Duración</th><th>Detalle</th></tr></thead><tbody>` +
+      ir.map((x) => `<tr><td class="when">${fdate(tmin(x.t))}</td><td>${esc(x.id_estacion)}</td><td>${pill("warn", x.tipo)}</td><td class="num">${dur(x.duracion_min)}</td><td>${esc(dec(x.detalle))}</td></tr>`).join("") + "</tbody>";
+    $("tbl-batch").innerHTML = `<thead><tr><th>Batch</th><th>Lanzamiento</th><th>Llegada estimada</th><th>Llegada real</th><th class="num">Tránsito</th><th class="num">Error</th></tr></thead><tbody>` +
+      D.batches.map((b) => `<tr><td><b>${esc(b.id_batch)}</b></td><td class="when">${fdate(tmin(b.lanzamiento_t))}</td><td class="when">${b.llegada_estimada_t !== null ? fdate(tmin(b.llegada_estimada_t)) : "–"}</td><td class="when">${b.llegada_real_t !== null ? fdate(tmin(b.llegada_real_t)) : "–"}</td><td class="num">${fmt(b.tiempo_transito_h, 1)} h</td><td class="num">${b.error_min !== null ? (b.error_min > 0 ? "+" : "") + fmt(b.error_min, 1) + " min" : "–"}</td></tr>`).join("") + "</tbody>";
+  }
+
+  // tabs & refresh
+  const TABS = ["operacion", "integridad", "envolvente", "desempeno", "instrumentos"];
+  function renderTabContent(tab) {
+    if (tab === "operacion") { renderKpiOp(); renderEvents(); }
+    if (tab === "integridad") { renderChips(); renderAlarms(); renderDetail(); }
+    if (tab === "envolvente") { renderEnv(); }
+    if (tab === "desempeno") { renderMc(); }
+    if (tab === "instrumentos") { renderInst(); }
+    drawTab(tab);
+  }
+  function showTab(tab, push) {
+    if (!TABS.includes(tab)) tab = "operacion";
+    state.tab = tab;
+    TABS.forEach((t) => {
+      $("tab-" + t).hidden = t !== tab;
+      $("t-" + t).setAttribute("aria-selected", String(t === tab));
+      $("t-" + t).tabIndex = t === tab ? 0 : -1;
+    });
+    if (push && location.hash !== "#" + tab) history.replaceState(null, "", "#" + tab);
+    renderTabContent(tab);
+  }
+  function refresh() { renderTabContent(state.tab); }
+
+  function init() {
+    $("leak-count").textContent = D.leaks.length;
+    initPeriod();
+    renderLeakCards();
+    initProfileSlider();
+    document.querySelectorAll("nav.tabs button").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab, true)));
+    $("tipo-seg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; state.tipo = b.dataset.tipo; renderMc(); drawTab("desempeno"); });
+    document.querySelector("nav.tabs").addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      const i = TABS.indexOf(state.tab) + (e.key === "ArrowRight" ? 1 : -1);
+      const t = TABS[(i + TABS.length) % TABS.length]; showTab(t, true); $("t-" + t).focus();
+    });
+    window.addEventListener("hashchange", () => showTab(location.hash.slice(1), false));
+    const rethem = () => { disposeAll(); drawTab(state.tab); };
+    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rethem);
+    new MutationObserver(rethem).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    showTab(location.hash.slice(1) || "operacion", false);
+  }
+
+  const fontsReady = document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1500))]) : Promise.resolve();
+  if (typeof echarts === "undefined") {
+    document.querySelector("main .wrap").insertAdjacentHTML("afterbegin", '<p class="card">No se pudo cargar la librería de gráficos (ECharts). Revisa la conexión a internet y recarga la página.</p>');
+  } else {
+    fontsReady.then(init);
+  }
+})();
+</script>
