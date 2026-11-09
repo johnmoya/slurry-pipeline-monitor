@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.venv/
+# La base SQLite se regenera con `python run_all.py` (~1 min)
+data/ducto_monitoreo.sqlite
+*.pbix.bak
